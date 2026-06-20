@@ -66,4 +66,16 @@ describe('Carbon Footprint Engine & Calculator Tests', () => {
     }
   });
 
+  test('findCarbonMatch handles category mismatch with substring and keyword overlap', () => {
+    // 1. Substring match within the same category after category mismatch
+    const matchSubstring = findCarbonMatch('Rice Plastic Bottle', 'Household');
+    expect(matchSubstring).not.toBeNull();
+    expect(matchSubstring?.name).toBe('Plastic Bottle');
+
+    // 2. Keyword overlap within the same category after category mismatch
+    const matchOverlap = findCarbonMatch('Rice Disposable', 'Household');
+    expect(matchOverlap).not.toBeNull();
+    expect(matchOverlap?.name).toBe('Disposable Cup');
+  });
+
 });

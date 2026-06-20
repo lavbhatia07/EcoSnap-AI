@@ -32,6 +32,7 @@ export default function LoadingScanner({ imageUrl }: LoadingScannerProps) {
     >
       {/* Background Image Preview */}
       {imageUrl && (
+        /* eslint-disable-next-line @next/next/no-img-element */
         <img
           src={imageUrl}
           alt="Scanning product"

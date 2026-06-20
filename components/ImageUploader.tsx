@@ -50,7 +50,7 @@ export default function ImageUploader({ onImageSelected }: ImageUploaderProps) {
     e.stopPropagation();
     if (e.type === 'dragenter' || e.type === 'dragover') {
       setDragActive(true);
-    } else if (e.type === 'dragleave') {
+    } else {
       setDragActive(false);
     }
   };
@@ -60,7 +60,7 @@ export default function ImageUploader({ onImageSelected }: ImageUploaderProps) {
     e.stopPropagation();
     setDragActive(false);
 
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+    if (e.dataTransfer?.files && e.dataTransfer.files[0]) {
       processFile(e.dataTransfer.files[0]);
     }
   };
@@ -124,7 +124,7 @@ export default function ImageUploader({ onImageSelected }: ImageUploaderProps) {
         tabIndex={0}
         role="button"
         aria-label="Upload an image. Drag and drop file here, or press enter to select from library"
-        className={`relative overflow-hidden rounded-3xl border-2 border-dashed transition-all duration-300 cursor-pointer flex flex-col items-center justify-center p-8 text-center aspect-[4/3] max-h-[360px] ${
+        className={`relative overflow-hidden rounded-3xl border-2 border-dashed transition-all duration-300 cursor-pointer flex flex-col items-center justify-center p-8 text-center aspect-[4/3] max-h-[360px] focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-transparent ${
           dragActive
             ? 'border-emerald-400 bg-emerald-950/20'
             : imagePreview
@@ -134,6 +134,7 @@ export default function ImageUploader({ onImageSelected }: ImageUploaderProps) {
       >
         {imagePreview ? (
           <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-zinc-950">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={imagePreview}
               alt="Uploaded product preview"
@@ -142,7 +143,7 @@ export default function ImageUploader({ onImageSelected }: ImageUploaderProps) {
             {/* Overlay delete button */}
             <button
               onClick={clearImage}
-              className="absolute top-4 right-4 bg-zinc-900/80 hover:bg-zinc-800 text-white rounded-full p-2 border border-white/10 backdrop-blur-md transition-colors shadow-lg"
+              className="absolute top-4 right-4 bg-zinc-900/80 hover:bg-zinc-800 text-white rounded-full p-2 border border-white/10 backdrop-blur-md transition-colors shadow-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
               title="Remove image"
               aria-label="Remove uploaded image"
             >
@@ -174,7 +175,7 @@ export default function ImageUploader({ onImageSelected }: ImageUploaderProps) {
         <div className="grid grid-cols-2 gap-4 mt-6">
           <button
             onClick={triggerFileSelect}
-            className="flex items-center justify-center gap-2 py-3.5 px-4 bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-900 text-zinc-200 hover:text-white font-medium rounded-2xl border border-white/5 transition-all text-sm shadow-md"
+            className="flex items-center justify-center gap-2 py-3.5 px-4 bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-900 text-zinc-200 hover:text-white font-medium rounded-2xl border border-white/5 transition-all text-sm shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
             aria-label="Choose photo from system library"
           >
             <FileImage className="w-4 h-4 text-emerald-400" />
@@ -182,7 +183,7 @@ export default function ImageUploader({ onImageSelected }: ImageUploaderProps) {
           </button>
           <button
             onClick={triggerCameraSelect}
-            className="flex items-center justify-center gap-2 py-3.5 px-4 bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-900 text-zinc-200 hover:text-white font-medium rounded-2xl border border-white/5 transition-all text-sm shadow-md"
+            className="flex items-center justify-center gap-2 py-3.5 px-4 bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-900 text-zinc-200 hover:text-white font-medium rounded-2xl border border-white/5 transition-all text-sm shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
             aria-label="Use camera to snap photo"
           >
             <Camera className="w-4 h-4 text-emerald-400" />

@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Sparkles, CheckCircle2, ShieldAlert, Award, Lightbulb } from 'lucide-react';
 import { AnalysisResult } from '../types/analysis';
 import CarbonCard from './CarbonCard';
+import { calculateBarWidth, calculateSavingsPercent } from '../lib/utils';
 
 interface ResultsDashboardProps {
   result: AnalysisResult;
@@ -26,16 +27,28 @@ export default function ResultsDashboard({ result, imageUrl, onReset }: ResultsD
     ecoTip
   } = result;
 
+  const dashboardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (dashboardRef.current) {
+      dashboardRef.current.focus();
+    }
+  }, []);
+
   const confidencePercentage = Math.round(confidenceScore * 100);
 
   // Calculate comparative bar widths
   const maxVal = Math.max(carbonValue, alternativeCarbonValue, 0.1);
-  const currentBarWidth = Math.round((carbonValue / maxVal) * 100);
-  const alternativeBarWidth = Math.round((alternativeCarbonValue / maxVal) * 100);
-  const savingsPercent = Math.round((savings / Math.max(carbonValue, 0.1)) * 100);
+  const currentBarWidth = calculateBarWidth(carbonValue, maxVal);
+  const alternativeBarWidth = calculateBarWidth(alternativeCarbonValue, maxVal);
+  const savingsPercent = calculateSavingsPercent(savings, carbonValue);
 
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div 
+      ref={dashboardRef}
+      tabIndex={-1}
+      className="w-full max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 focus:outline-none"
+    >
       {/* Header Section */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-white/5 pb-6">
         <div>
@@ -48,12 +61,12 @@ export default function ResultsDashboard({ result, imageUrl, onReset }: ResultsD
         </div>
         <button
           onClick={onReset}
-          className="px-6 py-3 bg-white text-zinc-950 font-semibold rounded-2xl hover:bg-zinc-200 active:bg-white transition-all text-sm shadow-lg hover:shadow-white/5 cursor-pointer"
+          className="px-6 py-3 bg-white text-zinc-950 font-semibold rounded-2xl hover:bg-zinc-200 active:bg-white transition-all text-sm shadow-lg hover:shadow-white/5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500"
         >
           Scan Another Item
         </button>
       </div>
-
+ 
       {/* Main Grid */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
         
@@ -64,6 +77,7 @@ export default function ResultsDashboard({ result, imageUrl, onReset }: ResultsD
           <div className="rounded-3xl bg-zinc-900/20 border border-white/5 overflow-hidden shadow-xl">
             {imageUrl && (
               <div className="aspect-[4/3] w-full relative overflow-hidden bg-zinc-950 border-b border-white/5">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={imageUrl}
                   alt={itemName}
@@ -121,21 +135,35 @@ export default function ResultsDashboard({ result, imageUrl, onReset }: ResultsD
                   <span className="text-zinc-400">{itemName} (Current)</span>
                   <span className="text-zinc-300 font-semibold">{carbonValue.toFixed(2)} kg</span>
                 </div>
-                <div className="h-3 w-full bg-zinc-950 rounded-full overflow-hidden border border-white/5">
+                <div 
+                  role="progressbar"
+                  aria-label={`${itemName} footprint`}
+                  aria-valuenow={carbonValue}
+                  aria-valuemin={0}
+                  aria-valuemax={maxVal}
+                  className="h-3 w-full bg-zinc-950 rounded-full overflow-hidden border border-white/5"
+                >
                   <div
                     style={{ width: `${currentBarWidth}%` }}
                     className="h-full rounded-full bg-gradient-to-r from-amber-500 to-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.15)] transition-all duration-1000"
                   />
                 </div>
               </div>
-
+ 
               {/* Alternative Item Bar */}
               <div className="space-y-2">
                 <div className="flex justify-between text-xs font-medium">
                   <span className="text-emerald-400">{alternative} (Alternative)</span>
                   <span className="text-emerald-400 font-semibold">{alternativeCarbonValue.toFixed(2)} kg</span>
                 </div>
-                <div className="h-3 w-full bg-zinc-950 rounded-full overflow-hidden border border-white/5">
+                <div 
+                  role="progressbar"
+                  aria-label={`${alternative} footprint`}
+                  aria-valuenow={alternativeCarbonValue}
+                  aria-valuemin={0}
+                  aria-valuemax={maxVal}
+                  className="h-3 w-full bg-zinc-950 rounded-full overflow-hidden border border-white/5"
+                >
                   <div
                     style={{ width: `${alternativeBarWidth}%` }}
                     className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 shadow-[0_0_10px_rgba(52,211,153,0.2)] transition-all duration-1000"

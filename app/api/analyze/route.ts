@@ -1,15 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { identifyItemWithVision, generateSustainabilityAdvice } from '../../../lib/openai';
 import { calculateCarbonDetails } from '../../../lib/carbonCalculator';
-import { AnalysisResult } from '../../../types/analysis';
+import { AnalysisResult, AIVisionResult } from '../../../types/analysis';
+import { sanitizeFileName, validateImageMagicNumbers, cleanBase64Data } from '../../../lib/utils';
 
-// Simple in-memory rate limiting (for demo purposes)
+// Request Validation Schema
+const analyzeRequestSchema = z.object({
+  image: z.string().min(1, 'Image data is required.'),
+  mimeType: z.string().regex(/^image\/(jpeg|jpg|png|webp)$/, 'Unsupported file format. Please upload a JPG, PNG, or WEBP image.'),
+  fileName: z.string().optional()
+});
+
+// Simple in-memory rate limiting with cleanup
 const ipCache = new Map<string, { count: number; resetTime: number }>();
 const RATE_LIMIT_MAX = 20; // 20 requests
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
 
 function applyRateLimit(ip: string): { limitReached: boolean; remaining: number; reset: number } {
   const now = Date.now();
+  
+  // Periodically clean up expired entries to prevent memory leaks (10% probability per check)
+  if (Math.random() < 0.1) {
+    for (const [cachedIp, data] of ipCache.entries()) {
+      if (now > data.resetTime) {
+        ipCache.delete(cachedIp);
+      }
+    }
+  }
+
   const cached = ipCache.get(ip);
 
   if (!cached || now > cached.resetTime) {
@@ -27,77 +46,96 @@ function applyRateLimit(ip: string): { limitReached: boolean; remaining: number;
 }
 
 export async function POST(request: NextRequest) {
-  // 1. Rate Limiting Check
-  const ip = request.headers.get('x-forwarded-for') || 'anonymous-ip';
-  const { limitReached, remaining, reset } = applyRateLimit(ip);
-
-  const headers = {
-    'X-RateLimit-Limit': RATE_LIMIT_MAX.toString(),
-    'X-RateLimit-Remaining': remaining.toString(),
-    'X-RateLimit-Reset': Math.ceil(reset / 1000).toString(),
-  };
-
-  if (limitReached) {
-    return NextResponse.json(
-      { error: 'Too many requests. Please try again in a minute.' },
-      { status: 429, headers }
-    );
-  }
-
+  let headers: Record<string, string> = {};
   try {
+    // 1. Rate Limiting Check
+    const ip = request?.headers?.get('x-forwarded-for') || 'anonymous-ip';
+    const { limitReached, remaining, reset } = applyRateLimit(ip);
+
+    headers = {
+      'X-RateLimit-Limit': RATE_LIMIT_MAX.toString(),
+      'X-RateLimit-Remaining': remaining.toString(),
+      'X-RateLimit-Reset': Math.ceil(reset / 1000).toString(),
+    };
+
+    if (limitReached) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again in a minute.' },
+        { status: 429, headers }
+      );
+    }
     // 2. Parse request payload
-    let body;
+    let rawBody: unknown;
     try {
-      body = await request.json();
+      rawBody = await request.json();
     } catch {
       return NextResponse.json({ error: 'Invalid JSON payload.' }, { status: 400, headers });
     }
 
-    const { image, mimeType, fileName } = body;
-
-    if (!image) {
-      return NextResponse.json({ error: 'Image data is required.' }, { status: 400, headers });
+    // 3. Schema validation using Zod
+    const validationResult = analyzeRequestSchema.safeParse(rawBody);
+    if (!validationResult.success) {
+      const errorMsg = validationResult.error.issues.map((issue) => issue.message).join(', ');
+      return NextResponse.json({ error: `Validation error: ${errorMsg}` }, { status: 400, headers });
     }
 
-    // Extract base64 and clean prefix if it exists
-    let base64Data = image;
+    const { image, mimeType, fileName } = validationResult.data;
+
+    // Clean and split image data from raw base64 or Data URI format
+    let base64Data: string;
     let detectedMime = mimeType;
 
-    if (image.startsWith('data:')) {
-      const match = image.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
-      if (match) {
-        detectedMime = match[1];
-        base64Data = match[2];
-      } else {
-        return NextResponse.json({ error: 'Invalid base64 image format.' }, { status: 400, headers });
+    try {
+      const cleaned = cleanBase64Data(image);
+      base64Data = cleaned.base64Data;
+      if (cleaned.mimeType) {
+        detectedMime = cleaned.mimeType;
       }
+    } catch (err: unknown) {
+      const error = err as Error;
+      return NextResponse.json({ error: error.message || 'Invalid base64 image format.' }, { status: 400, headers });
     }
 
-    // 3. Validation
-    // Validate MIME type (JPG, PNG, WEBP)
+    // Double check allowed MIME types
     const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    if (detectedMime && !allowedMimes.includes(detectedMime)) {
+    if (!allowedMimes.includes(detectedMime)) {
       return NextResponse.json(
         { error: 'Unsupported file format. Please upload a JPG, PNG, or WEBP image.' },
         { status: 400, headers }
       );
     }
 
-    // Validate size (Max 10MB)
-    // base64 size is roughly length * 0.75
-    const sizeInBytes = base64Data.length * 0.75;
+    // Validate size and integrity
+    let buffer: Buffer;
+    try {
+      buffer = Buffer.from(base64Data, 'base64');
+    } catch {
+      return NextResponse.json({ error: 'Malformed base64 image data.' }, { status: 400, headers });
+    }
+
     const MAX_SIZE = 10 * 1024 * 1024; // 10MB
-    if (sizeInBytes > MAX_SIZE) {
+    if (buffer.length > MAX_SIZE) {
       return NextResponse.json(
         { error: 'Image exceeds the maximum allowed size of 10MB.' },
         { status: 400, headers }
       );
     }
 
+    // Verify magic numbers (prevent malformed file attacks)
+    if (!validateImageMagicNumbers(buffer)) {
+      return NextResponse.json(
+        { error: 'The uploaded file is not a valid image or is corrupted.' },
+        { status: 400, headers }
+      );
+    }
+
+    // Sanitize parameters
+    const sanitizedFileName = fileName ? sanitizeFileName(fileName) : undefined;
+
     // 4. Step 1: AI Vision Identification
-    let visionResult;
+    let visionResult: AIVisionResult;
     try {
-      visionResult = await identifyItemWithVision(base64Data, fileName);
+      visionResult = await identifyItemWithVision(base64Data, sanitizedFileName);
     } catch (e: unknown) {
       const err = e as Error;
       return NextResponse.json(
@@ -112,7 +150,7 @@ export async function POST(request: NextRequest) {
     const carbonDetails = calculateCarbonDetails(itemName, category);
 
     // 6. Step 3: Sustainability Advice generation
-    let advice;
+    let advice: { whyItMatters: string; betterAlternative: string; ecoTip: string };
     try {
       advice = await generateSustainabilityAdvice(
         itemName,

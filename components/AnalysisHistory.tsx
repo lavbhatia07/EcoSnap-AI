@@ -1,44 +1,20 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { History, Trash2, ArrowRight, Leaf } from 'lucide-react';
 import { HistoryItem } from '../types/analysis';
 
 interface AnalysisHistoryProps {
+  history: HistoryItem[];
   onSelectItem: (item: HistoryItem) => void;
-  // Trigger history reload when new scan finishes
-  refreshTrigger?: number;
+  onClearHistory: () => void;
 }
 
-export default function AnalysisHistory({ onSelectItem, refreshTrigger }: AnalysisHistoryProps) {
-  const [history, setHistory] = useState<HistoryItem[]>([]);
-
-  useEffect(() => {
-    loadHistory();
-  }, [refreshTrigger]);
-
-  const loadHistory = () => {
-    if (typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem('ecosnap_history');
-        if (stored) {
-          const parsed = JSON.parse(stored) as HistoryItem[];
-          // Sort by timestamp descending
-          setHistory(parsed.sort((a, b) => b.timestamp - a.timestamp));
-        } else {
-          setHistory([]);
-        }
-      } catch (e) {
-        console.error('Failed to load history from localStorage', e);
-      }
-    }
-  };
-
-  const clearHistory = (e: React.MouseEvent) => {
+export default function AnalysisHistory({ history, onSelectItem, onClearHistory }: AnalysisHistoryProps) {
+  const handleClearHistory = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (typeof window !== 'undefined' && confirm('Are you sure you want to clear your carbon analysis history?')) {
-      localStorage.removeItem('ecosnap_history');
-      setHistory([]);
+      onClearHistory();
     }
   };
 
@@ -64,8 +40,8 @@ export default function AnalysisHistory({ onSelectItem, refreshTrigger }: Analys
           Recent Scans
         </h3>
         <button
-          onClick={clearHistory}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-rose-400 text-xs font-semibold border border-white/5 hover:border-rose-950/50 transition-all cursor-pointer"
+          onClick={handleClearHistory}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-rose-400 text-xs font-semibold border border-white/5 hover:border-rose-950/50 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500"
           title="Clear scan history"
           aria-label="Clear scan history"
         >
@@ -98,11 +74,12 @@ export default function AnalysisHistory({ onSelectItem, refreshTrigger }: Analys
               role="button"
               tabIndex={0}
               aria-label={`Historical scan: ${item.result.itemName}. Carbon footprint ${item.result.carbonValue.toFixed(1)} kg. Click to load results.`}
-              className="group relative overflow-hidden rounded-2xl bg-zinc-900/30 hover:bg-zinc-900/50 border border-white/5 hover:border-white/10 transition-all duration-300 cursor-pointer flex flex-col justify-between p-4 h-48 shadow-md"
+              className="group relative overflow-hidden rounded-2xl bg-zinc-900/30 hover:bg-zinc-900/50 border border-white/5 hover:border-white/10 transition-all duration-300 cursor-pointer flex flex-col justify-between p-4 h-48 shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
               {/* background thumbnail watermark */}
               {item.imageUrl && (
                 <div className="absolute inset-0 w-full h-full opacity-10 group-hover:opacity-20 transition-opacity pointer-events-none select-none">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={item.imageUrl}
                     alt=""

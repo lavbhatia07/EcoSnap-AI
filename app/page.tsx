@@ -7,6 +7,7 @@ import LoadingScanner from '../components/LoadingScanner';
 import ResultsDashboard from '../components/ResultsDashboard';
 import AnalysisHistory from '../components/AnalysisHistory';
 import { AnalysisResult, HistoryItem } from '../types/analysis';
+import { useAnalysisHistory } from '../hooks/useAnalysisHistory';
 
 export default function Home() {
   const [activeState, setActiveState] = useState<'landing' | 'idle' | 'selected' | 'loading' | 'result' | 'error'>('landing');
@@ -15,14 +16,16 @@ export default function Home() {
   const [selectedFileName, setSelectedFileName] = useState<string>('');
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
 
+  const { history, saveToHistory, clearHistory } = useAnalysisHistory();
   const workspaceRef = useRef<HTMLDivElement>(null);
 
   const scrollToWorkspace = () => {
     setActiveState('idle');
     setTimeout(() => {
       workspaceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Accessibility focus management: focus the workspace container
+      workspaceRef.current?.focus();
     }, 100);
   };
 
@@ -59,7 +62,7 @@ export default function Home() {
       }
 
       setAnalysisResult(data);
-      saveToHistory(data);
+      saveToHistory(data, selectedImage);
       setActiveState('result');
     } catch (e: unknown) {
       const err = e as Error;
@@ -69,44 +72,12 @@ export default function Home() {
     }
   };
 
-  const saveToHistory = (result: AnalysisResult) => {
-    if (!selectedImage) return;
-
-    try {
-      const stored = localStorage.getItem('ecosnap_history');
-      let historyList: HistoryItem[] = [];
-
-      if (stored) {
-        historyList = JSON.parse(stored) as HistoryItem[];
-      }
-
-      const newItem: HistoryItem = {
-        id: result.id,
-        timestamp: Date.now(),
-        imageUrl: selectedImage,
-        result
-      };
-
-      // Push to front
-      historyList.unshift(newItem);
-
-      // Limit to 10 items
-      if (historyList.length > 10) {
-        historyList = historyList.slice(0, 10);
-      }
-
-      localStorage.setItem('ecosnap_history', JSON.stringify(historyList));
-      setRefreshTrigger(prev => prev + 1); // trigger history component updates
-    } catch (e) {
-      console.error('Failed to save scan to localStorage history:', e);
-    }
-  };
-
   const handleSelectHistoryItem = (item: HistoryItem) => {
     setSelectedImage(item.imageUrl);
     setAnalysisResult(item.result);
     setActiveState('result');
     workspaceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    workspaceRef.current?.focus();
   };
 
   const resetWorkspace = () => {
@@ -137,7 +108,7 @@ export default function Home() {
         <nav aria-label="Main Navigation">
           <button
             onClick={scrollToWorkspace}
-            className="text-xs font-semibold text-zinc-300 hover:text-white px-4 py-2 rounded-xl bg-zinc-900 border border-white/5 hover:border-white/10 transition-all cursor-pointer"
+            className="text-xs font-semibold text-zinc-300 hover:text-white px-4 py-2 rounded-xl bg-zinc-900 border border-white/5 hover:border-white/10 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500"
           >
             Scanner App
           </button>
@@ -162,7 +133,7 @@ export default function Home() {
         <div className="flex flex-col sm:flex-row gap-4 pt-4 items-center">
           <button
             onClick={scrollToWorkspace}
-            className="flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-zinc-950 font-bold rounded-2xl transition-all hover:scale-[1.02] shadow-lg shadow-emerald-500/20 active:scale-[0.98] text-base cursor-pointer"
+            className="flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-zinc-950 font-bold rounded-2xl transition-all hover:scale-[1.02] shadow-lg shadow-emerald-500/20 active:scale-[0.98] text-base cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500"
             aria-label="Try EcoSnap AI Now"
           >
             Try It Now
@@ -174,7 +145,7 @@ export default function Home() {
               const infoSec = document.getElementById('how-it-works');
               infoSec?.scrollIntoView({ behavior: 'smooth' });
             }}
-            className="flex items-center gap-1.5 text-zinc-400 hover:text-white transition-colors text-sm font-semibold py-2 px-4 cursor-pointer"
+            className="flex items-center gap-1.5 text-zinc-400 hover:text-white transition-colors text-sm font-semibold py-2 px-4 cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500"
           >
             Learn how it works
             <ArrowDown className="w-4 h-4" />
@@ -186,29 +157,29 @@ export default function Home() {
       <section id="how-it-works" className="bg-zinc-900/20 border-y border-white/5 py-16 px-6 z-10">
         <div className="max-w-4xl mx-auto space-y-12">
           <div className="text-center space-y-2">
-            <h3 className="text-2xl font-bold text-white">How EcoSnap AI Works</h3>
+            <h2 className="text-2xl font-bold text-white">How EcoSnap AI Works</h2>
             <p className="text-zinc-500 text-sm">Four seamless stages to carbon transparency</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
             <div className="p-5 rounded-2xl bg-zinc-900/40 border border-white/5 space-y-3">
               <div className="w-10 h-10 rounded-xl bg-zinc-950 flex items-center justify-center text-emerald-400 border border-white/5 font-bold">1</div>
-              <h4 className="text-white font-bold text-sm">Capture Photo</h4>
+              <h3 className="text-white font-bold text-sm">Capture Photo</h3>
               <p className="text-zinc-400 text-xs leading-relaxed">Snap a picture of any item with your phone or drag it onto our desktop canvas.</p>
             </div>
             <div className="p-5 rounded-2xl bg-zinc-900/40 border border-white/5 space-y-3">
               <div className="w-10 h-10 rounded-xl bg-zinc-950 flex items-center justify-center text-emerald-400 border border-white/5 font-bold">2</div>
-              <h4 className="text-white font-bold text-sm">Vision Detect</h4>
+              <h3 className="text-white font-bold text-sm">Vision Detect</h3>
               <p className="text-zinc-400 text-xs leading-relaxed">AI Vision inspects the photo to identify the item, its category, and confidence level.</p>
             </div>
             <div className="p-5 rounded-2xl bg-zinc-900/40 border border-white/5 space-y-3">
               <div className="w-10 h-10 rounded-xl bg-zinc-950 flex items-center justify-center text-emerald-400 border border-white/5 font-bold">3</div>
-              <h4 className="text-white font-bold text-sm">Carbon Score</h4>
+              <h3 className="text-white font-bold text-sm">Carbon Score</h3>
               <p className="text-zinc-400 text-xs leading-relaxed">We cross-reference our database to calculate the item&apos;s lifetime carbon footprint.</p>
             </div>
             <div className="p-5 rounded-2xl bg-zinc-900/40 border border-white/5 space-y-3">
               <div className="w-10 h-10 rounded-xl bg-zinc-950 flex items-center justify-center text-emerald-400 border border-white/5 font-bold">4</div>
-              <h4 className="text-white font-bold text-sm">Smart Advice</h4>
+              <h3 className="text-white font-bold text-sm">Smart Advice</h3>
               <p className="text-zinc-400 text-xs leading-relaxed">GPT provides actionable environmental context, alternative guides, and carbon savings.</p>
             </div>
           </div>
@@ -219,7 +190,8 @@ export default function Home() {
       <section 
         ref={workspaceRef} 
         id="app-workspace" 
-        className="px-6 py-20 flex-grow z-10 flex flex-col items-center justify-start space-y-12"
+        tabIndex={-1}
+        className="px-6 py-20 flex-grow z-10 flex flex-col items-center justify-start space-y-12 focus:outline-none"
       >
         <div className="text-center space-y-3 max-w-lg">
           <h2 className="text-3xl font-extrabold text-white tracking-tight">
@@ -237,7 +209,16 @@ export default function Home() {
           {activeState === 'landing' && (
             <div 
               onClick={scrollToWorkspace}
-              className="w-full max-w-xl p-8 rounded-3xl border border-dashed border-zinc-800 bg-zinc-900/20 hover:border-zinc-700 transition-all cursor-pointer text-center flex flex-col items-center py-16 space-y-6 group"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  scrollToWorkspace();
+                }
+              }}
+              tabIndex={0}
+              role="button"
+              aria-label="Scanner console, click to initialize scanner"
+              className="w-full max-w-xl p-8 rounded-3xl border border-dashed border-zinc-800 bg-zinc-900/20 hover:border-zinc-700 transition-all cursor-pointer text-center flex flex-col items-center py-16 space-y-6 group focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
               <div className="w-16 h-16 rounded-2xl bg-emerald-950/30 text-emerald-400 border border-emerald-900/40 flex items-center justify-center group-hover:scale-105 transition-transform">
                 <Recycle className="w-8 h-8" />
@@ -248,7 +229,7 @@ export default function Home() {
                   Click below to open the workspace and begin uploading or capturing your product photos.
                 </p>
               </div>
-              <button className="px-6 py-3 bg-zinc-900 text-white border border-white/5 font-bold text-sm rounded-xl hover:bg-zinc-800 transition-colors">
+              <button className="px-6 py-3 bg-zinc-900 text-white border border-white/5 font-bold text-sm rounded-xl hover:bg-zinc-800 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500">
                 Initialize Scanner
               </button>
             </div>
@@ -263,6 +244,7 @@ export default function Home() {
           {activeState === 'selected' && selectedImage && (
             <div className="w-full max-w-xl p-6 rounded-3xl bg-zinc-900/30 border border-white/5 flex flex-col space-y-6 animate-in fade-in zoom-in-95 duration-300">
               <div className="aspect-[4/3] w-full rounded-2xl overflow-hidden bg-zinc-950 border border-white/5 relative">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={selectedImage}
                   alt="Pre-analysis preview"
@@ -273,13 +255,13 @@ export default function Home() {
               <div className="flex flex-col sm:flex-row gap-4">
                 <button
                   onClick={resetWorkspace}
-                  className="flex-1 py-3.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-semibold rounded-2xl border border-white/5 transition-all text-sm cursor-pointer text-center"
+                  className="flex-1 py-3.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-semibold rounded-2xl border border-white/5 transition-all text-sm cursor-pointer text-center focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 >
                   Clear Selection
                 </button>
                 <button
                   onClick={startAnalysis}
-                  className="flex-[2] py-3.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-zinc-950 font-bold rounded-2xl transition-all hover:scale-[1.01] shadow-lg shadow-emerald-500/10 cursor-pointer text-center"
+                  className="flex-[2] py-3.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-zinc-950 font-bold rounded-2xl transition-all hover:scale-[1.01] shadow-lg shadow-emerald-500/10 cursor-pointer text-center focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 >
                   Analyze Carbon footprint
                 </button>
@@ -316,13 +298,13 @@ export default function Home() {
               <div className="flex gap-4 w-full">
                 <button
                   onClick={resetWorkspace}
-                  className="flex-1 py-3 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-semibold rounded-xl border border-white/5 transition-all cursor-pointer"
+                  className="flex-1 py-3 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-semibold rounded-xl border border-white/5 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={startAnalysis}
-                  className="flex-[2] py-3 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl transition-all cursor-pointer"
+                  className="flex-[2] py-3 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-rose-500"
                 >
                   Retry Analysis
                 </button>
@@ -335,8 +317,9 @@ export default function Home() {
         {/* History Component */}
         {activeState !== 'loading' && (
           <AnalysisHistory 
+            history={history}
             onSelectItem={handleSelectHistoryItem} 
-            refreshTrigger={refreshTrigger}
+            onClearHistory={clearHistory}
           />
         )}
 
@@ -346,16 +329,16 @@ export default function Home() {
       <section className="bg-zinc-900/10 border-t border-white/5 py-12 px-6">
         <div className="max-w-4xl mx-auto flex flex-col md:flex-row gap-8 items-start justify-between">
           <div className="space-y-2 max-w-sm">
-            <h4 className="text-white font-bold text-lg flex items-center gap-2">
+            <h3 className="text-white font-bold text-lg flex items-center gap-2">
               <Info className="w-5 h-5 text-emerald-400" />
               Sustainable Science
-            </h4>
+            </h3>
             <p className="text-zinc-400 text-xs leading-relaxed">
               Our emissions modeling estimates product footprints based on lifecycle assessment averages (agricultural production, mining, smelting, fabrication, shipping logistics). AI Vision categorizes products to match localized databases, adjusting predictions using context metrics.
             </p>
           </div>
           <div className="space-y-2 max-w-sm">
-            <h4 className="text-white font-bold text-lg">Did you know?</h4>
+            <h3 className="text-white font-bold text-lg">Did you know?</h3>
             <p className="text-zinc-400 text-xs leading-relaxed">
               Small substitutions yield significant greenhouse containment. Changing cow milk to oat milk saves 2.3 kg CO₂e per liter. Shifting from fresh beef to plant proteins can lower your weekly food footprint by up to 80%. Every small choice scales up!
             </p>
