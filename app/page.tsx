@@ -12,6 +12,7 @@ export default function Home() {
   const [activeState, setActiveState] = useState<'landing' | 'idle' | 'selected' | 'loading' | 'result' | 'error'>('landing');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedFileType, setSelectedFileType] = useState<string>('image/jpeg');
+  const [selectedFileName, setSelectedFileName] = useState<string>('');
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
@@ -25,9 +26,10 @@ export default function Home() {
     }, 100);
   };
 
-  const handleImageSelected = (base64Image: string, fileType: string) => {
+  const handleImageSelected = (base64Image: string, fileType: string, fileName: string) => {
     setSelectedImage(base64Image);
     setSelectedFileType(fileType);
+    setSelectedFileName(fileName);
     setActiveState('selected');
   };
 
@@ -45,7 +47,8 @@ export default function Home() {
         },
         body: JSON.stringify({
           image: selectedImage,
-          mimeType: selectedFileType
+          mimeType: selectedFileType,
+          fileName: selectedFileName
         }),
       });
 

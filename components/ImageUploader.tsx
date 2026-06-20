@@ -4,7 +4,7 @@ import React, { useState, useRef, DragEvent, ChangeEvent } from 'react';
 import { Upload, Camera, FileImage, AlertCircle, X } from 'lucide-react';
 
 interface ImageUploaderProps {
-  onImageSelected: (base64Image: string, fileType: string) => void;
+  onImageSelected: (base64Image: string, fileType: string, fileName: string) => void;
 }
 
 export default function ImageUploader({ onImageSelected }: ImageUploaderProps) {
@@ -36,7 +36,7 @@ export default function ImageUploader({ onImageSelected }: ImageUploaderProps) {
     reader.onload = (e) => {
       if (e.target?.result && typeof e.target.result === 'string') {
         setImagePreview(e.target.result);
-        onImageSelected(e.target.result, file.type);
+        onImageSelected(e.target.result, file.type, file.name);
       }
     };
     reader.onerror = () => {

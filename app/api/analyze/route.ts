@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid JSON payload.' }, { status: 400, headers });
     }
 
-    const { image, mimeType } = body;
+    const { image, mimeType, fileName } = body;
 
     if (!image) {
       return NextResponse.json({ error: 'Image data is required.' }, { status: 400, headers });
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
     // 4. Step 1: AI Vision Identification
     let visionResult;
     try {
-      visionResult = await identifyItemWithVision(base64Data);
+      visionResult = await identifyItemWithVision(base64Data, fileName);
     } catch (e: unknown) {
       const err = e as Error;
       return NextResponse.json(

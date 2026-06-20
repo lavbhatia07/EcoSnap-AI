@@ -13,10 +13,10 @@ export const openai = new OpenAI({
  * Step 1: Use OpenAI Vision to identify the item in the image.
  * Uses structured JSON outputs.
  */
-export async function identifyItemWithVision(base64Image: string): Promise<AIVisionResult> {
+export async function identifyItemWithVision(base64Image: string, fileName?: string): Promise<AIVisionResult> {
   if (!process.env.OPENAI_API_KEY) {
     console.warn('No OpenAI API key found. Returning mock analysis.');
-    return getMockVisionResult();
+    return getMockVisionResult(fileName);
   }
 
   try {
@@ -141,8 +141,78 @@ Carbon Savings by switching: ${savings} kg CO2e`
 /**
  * Mock vision results for fallback/testing/when API key is missing
  */
-function getMockVisionResult(): AIVisionResult {
-  return { itemName: 'Burger', category: 'Food', confidenceScore: 0.98 };
+function getMockVisionResult(fileName?: string): AIVisionResult {
+  if (fileName) {
+    const cleanName = fileName.toLowerCase().replace(/\.[a-z0-9]+$/i, '').replace(/[^a-z0-9\s-_]/g, '');
+    
+    if (cleanName.includes('burger')) {
+      return { itemName: 'Burger', category: 'Food', confidenceScore: 0.98 };
+    }
+    if (cleanName.includes('beef')) {
+      return { itemName: 'Beef', category: 'Food', confidenceScore: 0.96 };
+    }
+    if (cleanName.includes('tshirt') || cleanName.includes('t-shirt') || cleanName.includes('shirt')) {
+      return { itemName: 'Cotton T-Shirt', category: 'Clothing', confidenceScore: 0.92 };
+    }
+    if (cleanName.includes('phone') || cleanName.includes('mobile')) {
+      return { itemName: 'Smartphone', category: 'Electronics', confidenceScore: 0.95 };
+    }
+    if (cleanName.includes('bottle')) {
+      return { itemName: 'Plastic Bottle', category: 'Household', confidenceScore: 0.98 };
+    }
+    if (cleanName.includes('apple')) {
+      return { itemName: 'Apples', category: 'Food', confidenceScore: 0.99 };
+    }
+    if (cleanName.includes('avocado')) {
+      return { itemName: 'Avocado', category: 'Food', confidenceScore: 0.94 };
+    }
+    if (cleanName.includes('milk')) {
+      return { itemName: 'Cow Milk', category: 'Food', confidenceScore: 0.95 };
+    }
+    if (cleanName.includes('jeans') || cleanName.includes('denim')) {
+      return { itemName: 'Jeans (Cotton)', category: 'Clothing', confidenceScore: 0.91 };
+    }
+    if (cleanName.includes('boot')) {
+      return { itemName: 'Leather Boots', category: 'Clothing', confidenceScore: 0.93 };
+    }
+    if (cleanName.includes('laptop') || cleanName.includes('notebook')) {
+      return { itemName: 'Laptop', category: 'Electronics', confidenceScore: 0.97 };
+    }
+    if (cleanName.includes('tablet') || cleanName.includes('ipad')) {
+      return { itemName: 'Tablet', category: 'Electronics', confidenceScore: 0.96 };
+    }
+    if (cleanName.includes('tv') || cleanName.includes('television')) {
+      return { itemName: 'Smart TV', category: 'Electronics', confidenceScore: 0.98 };
+    }
+    
+    if (cleanName.includes('food') || cleanName.includes('eat') || cleanName.includes('recipe')) {
+      return { itemName: 'Beef', category: 'Food', confidenceScore: 0.85 };
+    }
+    if (cleanName.includes('cloth') || cleanName.includes('wear') || cleanName.includes('dress')) {
+      return { itemName: 'Cotton T-Shirt', category: 'Clothing', confidenceScore: 0.85 };
+    }
+    if (cleanName.includes('tech') || cleanName.includes('device') || cleanName.includes('gadget')) {
+      return { itemName: 'Smartphone', category: 'Electronics', confidenceScore: 0.85 };
+    }
+  }
+
+  const mocks: AIVisionResult[] = [
+    { itemName: 'Burger', category: 'Food', confidenceScore: 0.98 },
+    { itemName: 'Cotton T-Shirt', category: 'Clothing', confidenceScore: 0.92 },
+    { itemName: 'Smartphone', category: 'Electronics', confidenceScore: 0.95 },
+    { itemName: 'Plastic Bottle', category: 'Household', confidenceScore: 0.98 },
+  ];
+
+  if (fileName) {
+    let hash = 0;
+    for (let i = 0; i < fileName.length; i++) {
+      hash = fileName.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash) % mocks.length;
+    return mocks[index];
+  }
+
+  return mocks[0];
 }
 
 /**
