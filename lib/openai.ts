@@ -142,14 +142,7 @@ Carbon Savings by switching: ${savings} kg CO2e`
  * Mock vision results for fallback/testing/when API key is missing
  */
 function getMockVisionResult(): AIVisionResult {
-  const mocks: AIVisionResult[] = [
-    { itemName: 'Beef', category: 'Food', confidenceScore: 0.96 },
-    { itemName: 'Cotton T-Shirt', category: 'Clothing', confidenceScore: 0.92 },
-    { itemName: 'Smartphone', category: 'Electronics', confidenceScore: 0.95 },
-    { itemName: 'Plastic Bottle', category: 'Household', confidenceScore: 0.98 },
-  ];
-  // Select a random one
-  return mocks[Math.floor(Math.random() * mocks.length)];
+  return { itemName: 'Burger', category: 'Food', confidenceScore: 0.98 };
 }
 
 /**

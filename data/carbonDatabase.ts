@@ -12,6 +12,15 @@ export const carbonDatabase: CarbonDatabaseItem[] = [
     unit: 'per kg'
   },
   {
+    id: 'f1_b',
+    name: 'Burger',
+    category: 'Food',
+    carbonValue: 8.5,
+    alternative: 'Veggie Burger',
+    alternativeCarbonValue: 2.0,
+    unit: 'per burger'
+  },
+  {
     id: 'f2',
     name: 'Pork',
     category: 'Food',
