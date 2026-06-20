@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Leaf, AlertTriangle, Flame } from 'lucide-react';
+import { CARBON_THRESHOLD_EXCELLENT, CARBON_THRESHOLD_MODERATE } from '../constants';
 
 interface CarbonCardProps {
   value: number;
@@ -10,11 +11,8 @@ interface CarbonCardProps {
 
 export default function CarbonCard({ value, unit }: CarbonCardProps) {
   // Score range classifications
-  // 0–3 → Excellent
-  // 3–8 → Moderate
-  // 8+ → High Impact
   const getScoreDetails = (val: number) => {
-    if (val <= 3.0) {
+    if (val <= CARBON_THRESHOLD_EXCELLENT) {
       return {
         label: 'Excellent',
         description: 'Low environmental impact. Highly sustainable choice.',
@@ -22,7 +20,7 @@ export default function CarbonCard({ value, unit }: CarbonCardProps) {
         badgeColor: 'bg-emerald-500',
         icon: <Leaf className="w-5 h-5 text-emerald-400" />
       };
-    } else if (val <= 8.0) {
+    } else if (val <= CARBON_THRESHOLD_MODERATE) {
       return {
         label: 'Moderate Impact',
         description: 'Average footprint. Opportunities exist to reduce emissions.',

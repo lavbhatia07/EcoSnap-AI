@@ -4,6 +4,7 @@ import { identifyItemWithVision, generateSustainabilityAdvice } from '../../../l
 import { calculateCarbonDetails } from '../../../lib/carbonCalculator';
 import { AnalysisResult, AIVisionResult } from '../../../types/analysis';
 import { sanitizeFileName, validateImageMagicNumbers, cleanBase64Data } from '../../../lib/utils';
+import { RATE_LIMIT_MAX, RATE_LIMIT_WINDOW, MAX_FILE_SIZE, SUPPORTED_MIME_TYPES } from '../../../constants';
 
 // Request Validation Schema
 const analyzeRequestSchema = z.object({
@@ -14,8 +15,6 @@ const analyzeRequestSchema = z.object({
 
 // Simple in-memory rate limiting with cleanup
 const ipCache = new Map<string, { count: number; resetTime: number }>();
-const RATE_LIMIT_MAX = 20; // 20 requests
-const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
 
 function applyRateLimit(ip: string): { limitReached: boolean; remaining: number; reset: number } {
   const now = Date.now();
@@ -97,8 +96,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Double check allowed MIME types
-    const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    if (!allowedMimes.includes(detectedMime)) {
+    if (!SUPPORTED_MIME_TYPES.includes(detectedMime)) {
       return NextResponse.json(
         { error: 'Unsupported file format. Please upload a JPG, PNG, or WEBP image.' },
         { status: 400, headers }
@@ -113,8 +111,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Malformed base64 image data.' }, { status: 400, headers });
     }
 
-    const MAX_SIZE = 10 * 1024 * 1024; // 10MB
-    if (buffer.length > MAX_SIZE) {
+    if (buffer.length > MAX_FILE_SIZE) {
       return NextResponse.json(
         { error: 'Image exceeds the maximum allowed size of 10MB.' },
         { status: 400, headers }

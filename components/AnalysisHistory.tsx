@@ -3,6 +3,7 @@
 import React from 'react';
 import { History, Trash2, ArrowRight, Leaf } from 'lucide-react';
 import { HistoryItem } from '../types/analysis';
+import { CARBON_THRESHOLD_EXCELLENT, CARBON_THRESHOLD_MODERATE } from '../constants';
 
 interface AnalysisHistoryProps {
   history: HistoryItem[];
@@ -53,8 +54,8 @@ export default function AnalysisHistory({ history, onSelectItem, onClearHistory 
       {/* Grid of history cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
         {history.map((item) => {
-          const isExcellent = item.result.carbonValue <= 3.0;
-          const isHigh = item.result.carbonValue > 8.0;
+          const isExcellent = item.result.carbonValue <= CARBON_THRESHOLD_EXCELLENT;
+          const isHigh = item.result.carbonValue > CARBON_THRESHOLD_MODERATE;
           const badgeColor = isExcellent 
             ? 'text-emerald-400 bg-emerald-950/20' 
             : isHigh 

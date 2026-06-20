@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { HistoryItem, AnalysisResult } from '../types/analysis';
 
-const LOCAL_STORAGE_KEY = 'ecosnap_history';
-const MAX_HISTORY_ITEMS = 10;
+import { LOCAL_STORAGE_KEY, MAX_HISTORY_ITEMS } from '../constants';
 
 export function useAnalysisHistory() {
   const [history, setHistory] = useState<HistoryItem[]>([]);

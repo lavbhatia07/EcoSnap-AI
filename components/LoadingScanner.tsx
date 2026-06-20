@@ -1,24 +1,18 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { SCANNING_MESSAGES } from '../constants';
 
 interface LoadingScannerProps {
   imageUrl: string;
 }
-
-const MESSAGES = [
-  'AI Vision Analyzing...',
-  'Calculating Carbon Impact...',
-  'Generating Sustainability Advice...',
-  'Finalizing Eco-Score Dashboard...'
-];
 
 export default function LoadingScanner({ imageUrl }: LoadingScannerProps) {
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentMessageIndex((prev) => (prev + 1) % MESSAGES.length);
+      setCurrentMessageIndex((prev) => (prev + 1) % SCANNING_MESSAGES.length);
     }, 1500);
 
     return () => clearInterval(interval);
@@ -64,7 +58,7 @@ export default function LoadingScanner({ imageUrl }: LoadingScannerProps) {
         </div>
 
         <p className="text-white font-medium text-lg tracking-tight h-7 transition-all duration-300">
-          {MESSAGES[currentMessageIndex]}
+          {SCANNING_MESSAGES[currentMessageIndex]}
         </p>
         <p className="text-zinc-400 text-xs mt-1">
           Powering sustainability engine

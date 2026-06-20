@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import { Sparkles, CheckCircle2, ShieldAlert, Award, Lightbulb } from 'lucide-react';
 import { AnalysisResult } from '../types/analysis';
 import CarbonCard from './CarbonCard';
+import FootprintComparison from './FootprintComparison';
+import AIInsights from './AIInsights';
 import { calculateBarWidth, calculateSavingsPercent } from '../lib/utils';
 
 interface ResultsDashboardProps {
@@ -20,11 +21,11 @@ export default function ResultsDashboard({ result, imageUrl, onReset }: ResultsD
     carbonValue,
     alternative,
     alternativeCarbonValue,
-    unit,
     savings,
     whyItMatters,
     betterAlternative,
-    ecoTip
+    ecoTip,
+    unit
   } = result;
 
   const dashboardRef = useRef<HTMLDivElement>(null);
@@ -117,129 +118,24 @@ export default function ResultsDashboard({ result, imageUrl, onReset }: ResultsD
         <div className="md:col-span-7 space-y-6">
           
           {/* Savings Comparison Progress Bar */}
-          <div className="p-6 rounded-3xl bg-zinc-900/40 border border-white/5 shadow-xl space-y-6">
-            <div>
-              <h3 className="text-white font-bold text-lg tracking-tight flex items-center gap-2">
-                <Award className="w-5 h-5 text-emerald-400" />
-                Footprint Comparison
-              </h3>
-              <p className="text-zinc-400 text-xs mt-1">
-                Visualizing how alternative choices shrink your footprint
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              {/* Current Item Bar */}
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs font-medium">
-                  <span className="text-zinc-400">{itemName} (Current)</span>
-                  <span className="text-zinc-300 font-semibold">{carbonValue.toFixed(2)} kg</span>
-                </div>
-                <div 
-                  role="progressbar"
-                  aria-label={`${itemName} footprint`}
-                  aria-valuenow={carbonValue}
-                  aria-valuemin={0}
-                  aria-valuemax={maxVal}
-                  className="h-3 w-full bg-zinc-950 rounded-full overflow-hidden border border-white/5"
-                >
-                  <div
-                    style={{ width: `${currentBarWidth}%` }}
-                    className="h-full rounded-full bg-gradient-to-r from-amber-500 to-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.15)] transition-all duration-1000"
-                  />
-                </div>
-              </div>
- 
-              {/* Alternative Item Bar */}
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs font-medium">
-                  <span className="text-emerald-400">{alternative} (Alternative)</span>
-                  <span className="text-emerald-400 font-semibold">{alternativeCarbonValue.toFixed(2)} kg</span>
-                </div>
-                <div 
-                  role="progressbar"
-                  aria-label={`${alternative} footprint`}
-                  aria-valuenow={alternativeCarbonValue}
-                  aria-valuemin={0}
-                  aria-valuemax={maxVal}
-                  className="h-3 w-full bg-zinc-950 rounded-full overflow-hidden border border-white/5"
-                >
-                  <div
-                    style={{ width: `${alternativeBarWidth}%` }}
-                    className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 shadow-[0_0_10px_rgba(52,211,153,0.2)] transition-all duration-1000"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Savings Callout */}
-            {savings > 0 && (
-              <div className="p-4 bg-emerald-950/20 border border-emerald-900/50 rounded-2xl flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center flex-shrink-0 text-emerald-400 border border-emerald-500/20">
-                  <span className="text-lg font-bold">-{savingsPercent}%</span>
-                </div>
-                <div>
-                  <h4 className="text-white text-sm font-semibold">
-                    Greener Choice Alternative
-                  </h4>
-                  <p className="text-zinc-300 text-xs mt-0.5">
-                    Switching to <span className="text-emerald-400 font-medium">{alternative}</span> saves approximately <span className="font-semibold text-white">{savings.toFixed(1)} kg CO₂e</span>!
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
+          <FootprintComparison
+            itemName={itemName}
+            carbonValue={carbonValue}
+            alternative={alternative}
+            alternativeCarbonValue={alternativeCarbonValue}
+            savings={savings}
+            maxVal={maxVal}
+            currentBarWidth={currentBarWidth}
+            alternativeBarWidth={alternativeBarWidth}
+            savingsPercent={savingsPercent}
+          />
 
           {/* AI Insights & Details */}
-          <div className="space-y-4">
-            
-            {/* whyItMatters */}
-            <div className="p-6 rounded-3xl bg-zinc-900/20 border border-white/5 hover:border-white/10 transition-all flex gap-4 items-start">
-              <div className="p-2.5 rounded-xl bg-zinc-950 text-amber-400 border border-white/5 mt-0.5 flex-shrink-0">
-                <ShieldAlert className="w-5 h-5" />
-              </div>
-              <div className="space-y-1.5">
-                <h4 className="text-white font-bold text-sm uppercase tracking-wider">
-                  Environmental Context
-                </h4>
-                <p className="text-zinc-300 text-sm leading-relaxed">
-                  {whyItMatters}
-                </p>
-              </div>
-            </div>
-
-            {/* betterAlternative */}
-            <div className="p-6 rounded-3xl bg-zinc-900/20 border border-white/5 hover:border-white/10 transition-all flex gap-4 items-start">
-              <div className="p-2.5 rounded-xl bg-zinc-950 text-emerald-400 border border-white/5 mt-0.5 flex-shrink-0">
-                <CheckCircle2 className="w-5 h-5" />
-              </div>
-              <div className="space-y-1.5">
-                <h4 className="text-white font-bold text-sm uppercase tracking-wider">
-                  Greener Alternative Argument
-                </h4>
-                <p className="text-zinc-300 text-sm leading-relaxed">
-                  {betterAlternative}
-                </p>
-              </div>
-            </div>
-
-            {/* ecoTip */}
-            <div className="p-6 rounded-3xl bg-emerald-950/10 border border-emerald-900/30 hover:border-emerald-800/40 transition-all flex gap-4 items-start">
-              <div className="p-2.5 rounded-xl bg-emerald-950 text-emerald-400 border border-emerald-900/30 mt-0.5 flex-shrink-0">
-                <Lightbulb className="w-5 h-5" />
-              </div>
-              <div className="space-y-1.5">
-                <h4 className="text-emerald-400 font-bold text-sm uppercase tracking-wider flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4" />
-                  Eco-Action Tip
-                </h4>
-                <p className="text-zinc-300 text-sm leading-relaxed">
-                  {ecoTip}
-                </p>
-              </div>
-            </div>
-
-          </div>
+          <AIInsights
+            whyItMatters={whyItMatters}
+            betterAlternative={betterAlternative}
+            ecoTip={ecoTip}
+          />
 
         </div>
 

@@ -1,89 +1,27 @@
 'use client';
 
-import React, { useState, useRef, DragEvent, ChangeEvent } from 'react';
+import React from 'react';
 import { Upload, Camera, FileImage, AlertCircle, X } from 'lucide-react';
+import { useImageUpload } from '../hooks/useImageUpload';
 
 interface ImageUploaderProps {
   onImageSelected: (base64Image: string, fileType: string, fileName: string) => void;
 }
 
 export default function ImageUploader({ onImageSelected }: ImageUploaderProps) {
-  const [dragActive, setDragActive] = useState(false);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
-
-  const processFile = (file: File) => {
-    setError(null);
-
-    // Validate size (10 MB limit)
-    const maxSize = 10 * 1024 * 1024;
-    if (file.size > maxSize) {
-      setError('File size exceeds the 10 MB limit. Please upload a smaller image.');
-      return;
-    }
-
-    // Validate type (JPG, PNG, WEBP)
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    if (!validTypes.includes(file.type)) {
-      setError('Invalid file format. Only JPG, PNG, and WEBP are supported.');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      if (e.target?.result && typeof e.target.result === 'string') {
-        setImagePreview(e.target.result);
-        onImageSelected(e.target.result, file.type, file.name);
-      }
-    };
-    reader.onerror = () => {
-      setError('Failed to read file. Please try again.');
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleDrag = (e: DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true);
-    } else {
-      setDragActive(false);
-    }
-  };
-
-  const handleDrop = (e: DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-
-    if (e.dataTransfer?.files && e.dataTransfer.files[0]) {
-      processFile(e.dataTransfer.files[0]);
-    }
-  };
-
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      processFile(e.target.files[0]);
-    }
-  };
-
-  const triggerFileSelect = () => {
-    fileInputRef.current?.click();
-  };
-
-  const triggerCameraSelect = () => {
-    cameraInputRef.current?.click();
-  };
-
-  const clearImage = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setImagePreview(null);
-    setError(null);
-  };
+  const {
+    dragActive,
+    imagePreview,
+    error,
+    fileInputRef,
+    cameraInputRef,
+    handleDrag,
+    handleDrop,
+    handleFileChange,
+    triggerFileSelect,
+    triggerCameraSelect,
+    clearImage
+  } = useImageUpload(onImageSelected);
 
   return (
     <div className="w-full max-w-xl mx-auto">
